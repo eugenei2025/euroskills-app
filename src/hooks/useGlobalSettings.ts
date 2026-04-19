@@ -24,7 +24,13 @@ export function useGlobalSettings() {
 export function useSaveGlobalSettings() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async (values: { itpd_package_price?: number | null; competition_name?: string | null }) => {
+    mutationFn: async (values: {
+      itpd_package_price?: number | null
+      competition_name?: string | null
+      sdw_date?: string | null
+      cpm_date?: string | null
+      euroskills_date?: string | null
+    }) => {
       const { data: existing } = await supabase
         .from('global_settings')
         .select('*')

@@ -13,11 +13,15 @@ import type { FilterState } from '@/types/ui'
 
 const defaultFilters: FilterState = {
   search: '',
-  roleStatus: 'all',
-  docStatus: 'all',
+  roleStatus:       'all',
+  roleType:         'all',
+  docStatus:        'all',
+  docType:          'all',
   attendanceStatus: 'all',
-  skillNumber: '',
-  quickFilter: 'all',
+  skillNumber:      '',
+  quickFilter:      'all',
+  tpStatus:         'all',
+  groupBy:          'none',
 }
 
 interface DashboardProps {

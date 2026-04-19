@@ -4,6 +4,88 @@ import { useEventMandatoryRoles, useSetMandatoryRoles } from '@/hooks/useEventMa
 import { useGlobalSettings, useSaveGlobalSettings } from '@/hooks/useGlobalSettings'
 import type { EventType } from '@/types/database'
 
+// ── Global Event Dates ────────────────────────────────────────────────────────
+
+const EVENT_DATE_FIELDS: { field: 'sdw_date' | 'cpm_date' | 'euroskills_date'; label: string }[] = [
+  { field: 'sdw_date',        label: 'SDW Arrival Date' },
+  { field: 'cpm_date',        label: 'CPM Arrival Date' },
+  { field: 'euroskills_date', label: 'EuroSkills Competition Arrival Date' },
+]
+
+function GlobalEventDates() {
+  const { data: settings, isLoading } = useGlobalSettings()
+  const save = useSaveGlobalSettings()
+
+  const [sdwDate,        setSdwDate]        = useState('')
+  const [cpmDate,        setCpmDate]        = useState('')
+  const [euroskillsDate, setEuroskillsDate] = useState('')
+  const [saved, setSaved] = useState(false)
+
+  useEffect(() => {
+    if (!settings) return
+    setSdwDate(settings.sdw_date ?? '')
+    setCpmDate(settings.cpm_date ?? '')
+    setEuroskillsDate(settings.euroskills_date ?? '')
+  }, [settings?.sdw_date, settings?.cpm_date, settings?.euroskills_date])
+
+  const handleSave = () => {
+    save.mutate(
+      {
+        sdw_date:        sdwDate        || null,
+        cpm_date:        cpmDate        || null,
+        euroskills_date: euroskillsDate || null,
+      },
+      { onSuccess: () => setSaved(true) },
+    )
+  }
+
+  return (
+    <div className="border border-gray-200 rounded-lg overflow-hidden">
+      <div className="px-4 py-2.5 bg-gray-50 flex items-center justify-between">
+        <span className="text-sm font-medium text-gray-800">Global Event Arrival Dates</span>
+        {saved && <span className="text-xs text-green-600 font-medium">Saved</span>}
+      </div>
+      <div className="px-4 py-4 bg-white space-y-4">
+        <p className="text-xs text-gray-400">
+          Set the global arrival date for each event. These dates are shown in each skill’s
+          Events tab for any role that has a mandatory attendance obligation.
+        </p>
+        {isLoading ? (
+          <p className="text-xs text-gray-400">Loading…</p>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {EVENT_DATE_FIELDS.map(({ field, label }) => {
+                const val = field === 'sdw_date' ? sdwDate : field === 'cpm_date' ? cpmDate : euroskillsDate
+                const set = field === 'sdw_date' ? setSdwDate : field === 'cpm_date' ? setCpmDate : setEuroskillsDate
+                return (
+                  <div key={field}>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
+                    <input
+                      type="date"
+                      value={val}
+                      onChange={e => { set(e.target.value); setSaved(false) }}
+                      className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                    />
+                  </div>
+                )
+              })}
+            </div>
+            <Button
+              type="button"
+              size="sm"
+              onClick={handleSave}
+              loading={save.isPending}
+            >
+              Save Event Dates
+            </Button>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
 const FIXED_EVENTS: { type: EventType; label: string }[] = [
   { type: 'SDW',                   label: 'Skills Development Workshop (SDW)' },
   { type: 'CPM',                   label: 'Competition Preparation Meeting (CPM)' },
@@ -184,6 +266,20 @@ export function EventMandatoryRolesSettings({ generalOnly, eventsOnly }: EventMa
             </p>
           </div>
           <GlobalPriceSettings />
+        </div>
+      )}
+
+      {/* Section: Global Event Arrival Dates */}
+      {showGeneral && (
+        <div className="space-y-4">
+          <div>
+            <h2 className="text-base font-semibold text-gray-900">Global Event Dates</h2>
+            <p className="text-sm text-gray-500 mt-1">
+              Set the arrival date for each event. These appear in each skill’s Events tab
+              for all mandatory roles.
+            </p>
+          </div>
+          <GlobalEventDates />
         </div>
       )}
 

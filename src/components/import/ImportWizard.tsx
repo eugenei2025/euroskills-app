@@ -391,6 +391,50 @@ function useSmartImport(dataType: DataType) {
   })
 }
 
+// ── CSV template helper ───────────────────────────────────────────────────────
+// Generates a downloadable CSV template with the correct headers
+
+const CSV_TEMPLATES: { label: string; filename: string; headers: string[]; example: string[] }[] = [
+  {
+    label:    'Competition Roles',
+    filename: 'template_competition_roles.csv',
+    headers:  ['skill_number', 'role_type', 'first_name', 'family_name', 'email', 'iso_code', 'status', 'is_new', 'td_support', 'notes'],
+    example:  ['7', 'Chief Expert', 'Jane', 'Smith', 'jane.smith@example.com', 'GBR', 'Filled', 'false', 'false', ''],
+  },
+  {
+    label:    'Supporting Documents',
+    filename: 'template_supporting_documents.csv',
+    headers:  ['skill_number', 'doc_type', 'status', 'due_date', 'notes'],
+    example:  ['7', 'Technical Description (TD)', 'Pending', '2026-09-01', ''],
+  },
+  {
+    label:    'Test Project / Positions',
+    filename: 'template_test_project.csv',
+    headers:  ['skill_number', 'has_itpd', 'test_project_ready', 'test_project_validated', 'test_project_delivered', 'tp_agreed_delivery_date', 'marking_scheme_ready', 'marking_scheme_tested', 'readiness_flag', 'notes'],
+    example:  ['7', 'false', 'false', 'false', '', '2026-10-01', 'false', 'false', 'false', ''],
+  },
+  {
+    label:    'Events & Attendance',
+    filename: 'template_events.csv',
+    headers:  ['skill_number', 'event_type', 'attendance_status', 'attendee_name', 'event_date', 'event_location', 'notes'],
+    example:  ['7', 'SDW', 'Attending', 'Jane Smith', '2026-06-12', 'Berlin', ''],
+  },
+]
+
+function downloadTemplate(tpl: typeof CSV_TEMPLATES[0]) {
+  const lines = [
+    tpl.headers.join(','),
+    tpl.example.join(','),
+  ]
+  const blob = new Blob([lines.join('\n')], { type: 'text/csv' })
+  const url  = URL.createObjectURL(blob)
+  const a    = document.createElement('a')
+  a.href     = url
+  a.download = tpl.filename
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
 // ── Step indicator ────────────────────────────────────────────────────────────
 
 const STEPS = [
@@ -468,21 +512,152 @@ export function ImportWizard() {
       <CardContent>
         {/* ── Step 1: Upload ── */}
         {step === 1 && (
-          <div className="space-y-4">
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-800 space-y-2">
-              <p className="font-semibold">Supported CSV types — auto-detected from column headers:</p>
-              <ul className="list-disc list-inside space-y-1 text-xs">
-                <li><strong>Competition Roles</strong> — must include: <code>skill_number</code>, <code>role_type</code></li>
-                <li><strong>Supporting Documents</strong> — must include: <code>skill_number</code>, <code>doc_type</code></li>
-                <li><strong>Test Project / Positions</strong> — must include: <code>skill_number</code>, <code>has_itpd</code> or <code>project_type</code></li>
-                <li><strong>Events &amp; Attendance</strong> — must include: <code>skill_number</code>, <code>event_type</code>, <code>attendance_status</code></li>
-              </ul>
-              <p className="text-xs text-blue-600">
-                You can use <code>skill_number</code> <strong>or</strong> <code>skill_name</code> to identify skills.
-                Having both is best practice.
-              </p>
+          <div className="space-y-5">
+
+            {/* How to import — numbered steps */}
+            <div>
+              <h3 className="text-sm font-semibold text-gray-800 mb-3">How to import data</h3>
+              <ol className="space-y-2">
+                {[
+                  'Download a template for the data type you want to import (buttons below).',
+                  'Open the template in Excel or Google Sheets and fill in your data — one row per record.',
+                  'Save the file as CSV (comma-separated values).',
+                  'Drop or select the file in the upload area below — the system detects the data type automatically.',
+                  'Review the preview and click Import to load the data.',
+                ].map((text, i) => (
+                  <li key={i} className="flex gap-3 text-sm text-gray-700">
+                    <span className="flex-shrink-0 w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-semibold">{i + 1}</span>
+                    <span>{text}</span>
+                  </li>
+                ))}
+              </ol>
             </div>
-            <StepUpload onParsed={handleParsed} />
+
+            {/* Template downloads */}
+            <div>
+              <h3 className="text-sm font-semibold text-gray-800 mb-2">Download a template</h3>
+              <div className="grid grid-cols-2 gap-2">
+                {CSV_TEMPLATES.map(tpl => (
+                  <button
+                    key={tpl.filename}
+                    onClick={() => downloadTemplate(tpl)}
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg border border-blue-200 bg-blue-50 hover:bg-blue-100 text-blue-800 text-xs font-medium transition-colors text-left"
+                  >
+                    <svg className="w-4 h-4 flex-shrink-0 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+                    </svg>
+                    {tpl.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Column guides */}
+            <div className="border border-gray-200 rounded-lg overflow-hidden">
+              <div className="bg-gray-50 px-4 py-2 border-b border-gray-200">
+                <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Column reference</p>
+              </div>
+              <div className="divide-y divide-gray-100">
+
+                {/* Roles */}
+                <details className="group">
+                  <summary className="flex items-center justify-between px-4 py-2 cursor-pointer hover:bg-gray-50 select-none">
+                    <span className="text-xs font-medium text-gray-700">Competition Roles</span>
+                    <svg className="w-4 h-4 text-gray-400 group-open:rotate-180 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </summary>
+                  <div className="px-4 pb-3 pt-1 text-xs text-gray-600 space-y-1">
+                    <p><code className="bg-gray-100 rounded px-1">skill_number</code> — required. Skill number (e.g. <em>7</em>).</p>
+                    <p><code className="bg-gray-100 rounded px-1">role_type</code> — required. Exact values: <em>Chief Expert, Deputy Chief Expert, Workshop Manager, Jury President, Deputy Jury President, Jury President & Technical Leader, Team Leader, Substitute Team Leader, External Expert, Observer</em>.</p>
+                    <p><code className="bg-gray-100 rounded px-1">first_name</code> / <code className="bg-gray-100 rounded px-1">family_name</code> — person's name. Aliases: <em>First_Name, Given_Name / Family_Name, Last_Name, Surname</em>.</p>
+                    <p><code className="bg-gray-100 rounded px-1">email</code> — email address. Aliases: <em>e-mail, email_address</em>.</p>
+                    <p><code className="bg-gray-100 rounded px-1">iso_code</code> — 3-letter country code (e.g. <em>GBR</em>). Alias: <em>nationality</em>.</p>
+                    <p><code className="bg-gray-100 rounded px-1">status</code> — <em>Vacant, Pending, Filled, Not Applicable</em>. If omitted, derived from name presence.</p>
+                    <p><code className="bg-gray-100 rounded px-1">is_new</code> — boolean: <em>true / false / 1 / 0</em>.</p>
+                    <p><code className="bg-gray-100 rounded px-1">notes</code> — free text.</p>
+                  </div>
+                </details>
+
+                {/* Documents */}
+                <details className="group">
+                  <summary className="flex items-center justify-between px-4 py-2 cursor-pointer hover:bg-gray-50 select-none">
+                    <span className="text-xs font-medium text-gray-700">Supporting Documents</span>
+                    <svg className="w-4 h-4 text-gray-400 group-open:rotate-180 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </summary>
+                  <div className="px-4 pb-3 pt-1 text-xs text-gray-600 space-y-1">
+                    <p><code className="bg-gray-100 rounded px-1">skill_number</code> — required.</p>
+                    <p><code className="bg-gray-100 rounded px-1">doc_type</code> — required. Exact values: <em>Technical Description (TD), Competition Technical Description (CTL), Marking Scheme, Infrastructure List, Health &amp; Safety, Other</em>. Alias: <em>document_type</em>.</p>
+                    <p><code className="bg-gray-100 rounded px-1">status</code> — <em>Missing, Pending, Complete, Not Applicable</em>. Defaults to <em>Missing</em>.</p>
+                    <p><code className="bg-gray-100 rounded px-1">due_date</code> — date in <em>YYYY-MM-DD</em> format (optional).</p>
+                    <p><code className="bg-gray-100 rounded px-1">notes</code> — free text.</p>
+                  </div>
+                </details>
+
+                {/* Positions / TP */}
+                <details className="group">
+                  <summary className="flex items-center justify-between px-4 py-2 cursor-pointer hover:bg-gray-50 select-none">
+                    <span className="text-xs font-medium text-gray-700">Test Project / Positions</span>
+                    <svg className="w-4 h-4 text-gray-400 group-open:rotate-180 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </summary>
+                  <div className="px-4 pb-3 pt-1 text-xs text-gray-600 space-y-1">
+                    <p><code className="bg-gray-100 rounded px-1">skill_number</code> — required.</p>
+                    <p><code className="bg-gray-100 rounded px-1">has_itpd</code> — boolean: <em>true / false / 1 / 0</em>.</p>
+                    <p><code className="bg-gray-100 rounded px-1">test_project_ready</code> — boolean.</p>
+                    <p><code className="bg-gray-100 rounded px-1">test_project_validated</code> — boolean.</p>
+                    <p><code className="bg-gray-100 rounded px-1">test_project_delivered</code> — date in <em>YYYY-MM-DD</em> (leave blank if not yet delivered).</p>
+                    <p><code className="bg-gray-100 rounded px-1">tp_agreed_delivery_date</code> — date in <em>YYYY-MM-DD</em>.</p>
+                    <p><code className="bg-gray-100 rounded px-1">marking_scheme_ready</code> — boolean.</p>
+                    <p><code className="bg-gray-100 rounded px-1">marking_scheme_tested</code> — boolean.</p>
+                    <p><code className="bg-gray-100 rounded px-1">readiness_flag</code> — boolean.</p>
+                    <p><code className="bg-gray-100 rounded px-1">notes</code> — free text.</p>
+                    <p className="text-gray-500 pt-1">One row per skill. If the skill already has a position record it will be updated (upsert).</p>
+                  </div>
+                </details>
+
+                {/* Events */}
+                <details className="group">
+                  <summary className="flex items-center justify-between px-4 py-2 cursor-pointer hover:bg-gray-50 select-none">
+                    <span className="text-xs font-medium text-gray-700">Events &amp; Attendance</span>
+                    <svg className="w-4 h-4 text-gray-400 group-open:rotate-180 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </summary>
+                  <div className="px-4 pb-3 pt-1 text-xs text-gray-600 space-y-1">
+                    <p><code className="bg-gray-100 rounded px-1">skill_number</code> — required.</p>
+                    <p><code className="bg-gray-100 rounded px-1">event_type</code> — required. Exact values: <em>SDW, CPM, EuroSkills Competition</em>.</p>
+                    <p><code className="bg-gray-100 rounded px-1">attendance_status</code> — <em>Attending, Package Secured, Tentative, Not Attending, Not Applicable</em>. Defaults to <em>Not Applicable</em>.</p>
+                    <p><code className="bg-gray-100 rounded px-1">attendee_name</code> — name of the attendee (optional).</p>
+                    <p><code className="bg-gray-100 rounded px-1">event_date</code> — date in <em>YYYY-MM-DD</em> (optional).</p>
+                    <p><code className="bg-gray-100 rounded px-1">event_location</code> — free text (optional).</p>
+                    <p><code className="bg-gray-100 rounded px-1">notes</code> — free text.</p>
+                  </div>
+                </details>
+
+              </div>
+            </div>
+
+            {/* Important notes */}
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800 space-y-1">
+              <p className="font-semibold text-amber-900">Important notes</p>
+              <ul className="list-disc list-inside space-y-0.5">
+                <li><code className="bg-amber-100 rounded px-1">skill_number</code> is required in every file — this is how records are matched to skills.</li>
+                <li>Boolean fields accept: <em>true, false, 1, 0, yes</em> (case-insensitive).</li>
+                <li>Status and role_type values must match exactly (see column reference above).</li>
+                <li>Column names are flexible — e.g. <em>First_Name, Given_Name, e-mail, position, role</em> are all accepted.</li>
+              </ul>
+            </div>
+
+            {/* File upload */}
+            <div>
+              <h3 className="text-sm font-semibold text-gray-800 mb-2">Select your CSV file</h3>
+              <StepUpload onParsed={handleParsed} />
+            </div>
+
           </div>
         )}
 

@@ -154,6 +154,9 @@ export interface GlobalSettings {
   id: string
   itpd_package_price: number | null   // Global ITPD package price (€)
   competition_name: string | null     // e.g. "EuroSkills Dusseldorf 2027"
+  sdw_date: string | null             // Global SDW arrival date
+  cpm_date: string | null             // Global CPM arrival date
+  euroskills_date: string | null      // Global EuroSkills Competition arrival date
   updated_at: string
 }
 

@@ -9,8 +9,9 @@ import { supabase } from '@/lib/supabase'
 import { attendanceVariant } from '@/lib/utils'
 import { ATTENDANCE_STATUSES } from '@/lib/constants'
 import { useEventMandatoryRoles } from '@/hooks/useEventMandatoryRoles'
+import { useGlobalSettings } from '@/hooks/useGlobalSettings'
 import { getCurrentUserName, useCurrentUser } from '@/context/UserContext'
-import type { SkillEvent, EventType, AttendanceStatus } from '@/types/database'
+import type { SkillEvent, EventType, AttendanceStatus, GlobalSettings } from '@/types/database'
 
 // ── Fixed event types ─────────────────────────────────────────────────────────
 
@@ -131,6 +132,7 @@ interface EventRowProps {
   eventType: EventType
   eventLabel: string
   existing: SkillEvent | undefined
+  globalDate?: string | null   // global arrival date from Settings
   mandatoryRoles: string[]   // global config for this event type
 }
 
@@ -212,7 +214,7 @@ function AttendeeSubForm({ index, register, watch }: {
 
 // ── EventRow ──────────────────────────────────────────────────────────────────
 
-function EventRow({ skillId, eventType, eventLabel, existing, mandatoryRoles }: EventRowProps) {
+function EventRow({ skillId, eventType, eventLabel, existing, globalDate, mandatoryRoles }: EventRowProps) {
   const [editing, setEditing] = useState(false)
   const upsert = useUpsertEvent(skillId)
   const { canEdit } = useCurrentUser()
@@ -263,7 +265,14 @@ function EventRow({ skillId, eventType, eventLabel, existing, mandatoryRoles }: 
       <div className="border border-gray-200 rounded-lg overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 bg-gray-50">
-          <span className="text-sm font-medium text-gray-800">{eventLabel}</span>
+          <div>
+            <span className="text-sm font-medium text-gray-800">{eventLabel}</span>
+            {globalDate && (
+              <span className="ml-3 text-xs text-indigo-600 font-medium">
+                Arrival: {globalDate}
+              </span>
+            )}
+          </div>
           <div className="flex items-center gap-2">
             <button
               onClick={() => canEdit && setEditing(true)}
@@ -404,6 +413,7 @@ function EventRow({ skillId, eventType, eventLabel, existing, mandatoryRoles }: 
 
 export function EventsPanel({ skillId, events }: EventsPanelProps) {
   const { data: globalMandatory = [] } = useEventMandatoryRoles()
+  const { data: globalSettings }       = useGlobalSettings()
 
   const eventMap: Partial<Record<EventType, SkillEvent>> = {}
   for (const ev of events) { eventMap[ev.event_type] = ev }
@@ -411,12 +421,22 @@ export function EventsPanel({ skillId, events }: EventsPanelProps) {
   const mandatoryForType = (et: EventType) =>
     globalMandatory.filter(r => r.event_type === et).map(r => r.role_abbr)
 
+  // Map event type to global arrival date field
+  const globalDateForType = (et: EventType): string | null => {
+    if (!globalSettings) return null
+    const gs = globalSettings as GlobalSettings
+    if (et === 'SDW')                   return gs.sdw_date ?? null
+    if (et === 'CPM')                   return gs.cpm_date ?? null
+    if (et === 'EuroSkills Competition') return gs.euroskills_date ?? null
+    return null
+  }
+
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between mb-2">
         <h3 className="text-sm font-semibold text-gray-700">Events</h3>
         <span className="text-xs text-gray-400">
-          Mandatory roles are set globally in Settings
+          Mandatory roles and arrival dates are set globally in Settings
         </span>
       </div>
 
@@ -427,6 +447,7 @@ export function EventsPanel({ skillId, events }: EventsPanelProps) {
           eventType={type}
           eventLabel={label}
           existing={eventMap[type]}
+          globalDate={globalDateForType(type)}
           mandatoryRoles={mandatoryForType(type)}
         />
       ))}

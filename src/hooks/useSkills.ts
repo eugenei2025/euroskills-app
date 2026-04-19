@@ -94,8 +94,13 @@ export function useSkillsWithMetrics() {
           .filter(Boolean)
           .filter(jp => !jp.is_jptl)
 
-        // JPTL(s) — unique jptl_ids from the assignments for this skill
-        const jptlIds = [...new Set(jpAsgn.map(a => a.jptl_id).filter(Boolean) as string[])]
+        // JPTL(s): either referenced via jptl_id on an assignment,
+        // OR assigned directly as jp_id when is_jptl === true (JPTL-only row)
+        const jptlIdsFromRef    = jpAsgn.map(a => a.jptl_id).filter(Boolean) as string[]
+        const jptlIdsFromDirect = jpAsgn
+          .map(a => a.jp_id)
+          .filter(id => jpMap[id]?.is_jptl)
+        const jptlIds   = [...new Set([...jptlIdsFromRef, ...jptlIdsFromDirect])]
         const skillJPTLs = jptlIds.map(id => jpMap[id]).filter(Boolean)
 
         // SAs assigned to this skill

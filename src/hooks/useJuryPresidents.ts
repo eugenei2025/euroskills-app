@@ -33,11 +33,17 @@ export function useSkillJpSaInfo(skillId: string | null): SkillJpSaInfo {
   const skillJpAsgn = jpAsgn.filter(a => a.skill_id === skillId)
   const skillSaAsgn = saAsgn.filter(a => a.skill_id === skillId)
 
+  // JPs = rows where jp_id points to a non-JPTL person
   const jps = skillJpAsgn
     .map(a => ({ ...jpMap[a.jp_id], jptl_id: a.jptl_id }))
     .filter(jp => jp.id && !jp.is_jptl) as (GlobalJuryPresident & { jptl_id: string | null })[]
 
-  const jptlIds = [...new Set(skillJpAsgn.map(a => a.jptl_id).filter(Boolean) as string[])]
+  // JPTLs = (a) referenced via jptl_id on any assignment, OR (b) assigned directly as jp_id when is_jptl=true
+  const jptlIdsFromRef    = skillJpAsgn.map(a => a.jptl_id).filter(Boolean) as string[]
+  const jptlIdsFromDirect = skillJpAsgn
+    .map(a => a.jp_id)
+    .filter(id => jpMap[id]?.is_jptl)
+  const jptlIds = [...new Set([...jptlIdsFromRef, ...jptlIdsFromDirect])]
   const jptls = jptlIds.map(id => jpMap[id]).filter(Boolean) as GlobalJuryPresident[]
 
   const sas = skillSaAsgn.map(a => saMap[a.sa_id]).filter(Boolean) as GlobalSkillsAdvisor[]
@@ -270,6 +276,7 @@ export function useSetJpAssignmentsForSkill() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['skill-jp-assignments'] })
+      qc.invalidateQueries({ queryKey: ['skills-with-metrics'] })
       qc.invalidateQueries({ queryKey: ['settings-audit'] })
     },
   })
@@ -331,7 +338,28 @@ export function useSetSaAssignmentsForSkill() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['skill-sa-assignments'] })
+      qc.invalidateQueries({ queryKey: ['skills-with-metrics'] })
       qc.invalidateQueries({ queryKey: ['settings-audit'] })
+    },
+  })
+}
+
+// ── Reset ALL audit logs ──────────────────────────────────────────────────────
+// Deletes ALL rows from audit_log.
+
+export function useResetAllAuditLogs() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase
+        .from('audit_log')
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000')
+      if (error) throw error
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['settings-audit'] })
+      qc.invalidateQueries({ queryKey: ['audit'] })
     },
   })
 }

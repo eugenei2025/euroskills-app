@@ -57,11 +57,13 @@ function DocRow({ skillId, docType, existing }: DocRowProps) {
   const isNotApplicable = watchedStatus === 'Not Applicable'
 
   const onSubmit = (data: SupportingDocumentForm) => {
-    // Clear date when Not Applicable
+    // Treat empty string as null for due_date (date input returns '' when cleared)
+    const rawDate = data.due_date
+    const cleanDate = (!rawDate || rawDate.trim() === '') ? null : rawDate.trim()
     const payload = {
       ...(data as Partial<SupportingDocument>),
       id:       existing?.id,
-      due_date: isNotApplicable ? null : (data.due_date ?? null),
+      due_date: isNotApplicable ? null : cleanDate,
     }
     upsert.mutate(payload, { onSuccess: () => setEditing(false) })
   }
@@ -163,11 +165,12 @@ function DocRow({ skillId, docType, existing }: DocRowProps) {
           )}
         </div>
 
-        {/* Date — hidden when Not Applicable. Label changes to "Approved Date" when Complete */}
+        {/* Date — hidden when Not Applicable. Label changes based on status. Always optional. */}
         {!isNotApplicable && (
           <div>
             <label className="block text-xs text-gray-600 mb-1">
-              {isComplete ? 'Approved Date' : 'Due Date'} (optional)
+              {isComplete ? 'Approval Date' : 'Due Date'}
+              <span className="ml-1 text-gray-400 font-normal">(optional)</span>
             </label>
             <input
               {...register('due_date')}

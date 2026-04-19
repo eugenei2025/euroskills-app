@@ -19,6 +19,7 @@ export function StepUpload({ onParsed }: StepUploadProps) {
     Papa.parse<Record<string, string>>(file, {
       header: true,
       skipEmptyLines: true,
+      encoding: 'UTF-8',
       complete: result => {
         if (!result.data.length) {
           setError('The CSV file appears to be empty.')

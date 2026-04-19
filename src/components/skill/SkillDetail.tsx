@@ -56,16 +56,26 @@ export function SkillDetail({ skillId, onClose }: SkillDetailProps) {
             <div>
               <button
                 onClick={onClose}
-                className="text-xs text-blue-600 hover:underline mb-2 flex items-center gap-1"
+                className="inline-flex items-center gap-1.5 mb-3 px-3 py-1.5 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors shadow-sm"
               >
-                ← Back to Dashboard
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                </svg>
+                Back to Dashboard
               </button>
               {skillsLoading ? (
                 <div className="h-7 w-64 bg-gray-100 rounded animate-pulse" />
               ) : (
-                <h2 className="text-2xl font-bold text-gray-900">
-                  {skill ? skillLabel(skill.skill_number, skill.skill_name) : '—'}
-                </h2>
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">
+                    {skill ? skillLabel(skill.skill_number, skill.skill_name) : '—'}
+                  </h2>
+                  {skill?.competition_mode && (
+                    <p className="text-sm text-indigo-600 font-medium mt-0.5">
+                      Competition Mode: {skill.competition_mode}
+                    </p>
+                  )}
+                </div>
               )}
               {skill?.updated_at && (
                 <p className="text-xs text-gray-400 mt-1">
@@ -77,12 +87,6 @@ export function SkillDetail({ skillId, onClose }: SkillDetailProps) {
 
             {/* Quick-status summary */}
             <div className="flex flex-wrap gap-3 items-center">
-              {/* Competition mode — shown prominently alongside CE/DCE */}
-              {skill?.competition_mode && (
-                <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold bg-indigo-600 text-white">
-                  Mode: {skill.competition_mode}
-                </span>
-              )}
               <div className="text-xs text-gray-500">
                 <span className="font-medium text-gray-700">CE: </span>
                 {ceRole && ceRole.status === 'Filled'

@@ -8,6 +8,7 @@ import {
   checkAdminPassword,
   changeAdminPassword,
 } from '@/hooks/useAppUsers'
+import { useResetAllAuditLogs } from '@/hooks/useJuryPresidents'
 import type { AppUser } from '@/hooks/useAppUsers'
 
 // ── Password Gate ─────────────────────────────────────────────────────────────
@@ -76,9 +77,10 @@ function PasswordGate({ onUnlocked }: { onUnlocked: () => void }) {
 
 function AccessManagementPanel() {
   const { data: users = [], isLoading } = useAllAppUsers()
-  const addUser    = useAddAppUser()
-  const toggleUser = useToggleAppUser()
-  const deleteUser = useDeleteAppUser()
+  const addUser         = useAddAppUser()
+  const toggleUser      = useToggleAppUser()
+  const deleteUser      = useDeleteAppUser()
+  const resetAuditLogs  = useResetAllAuditLogs()
 
   const [newEmail, setNewEmail]     = useState('')
   const [addError, setAddError]     = useState('')
@@ -92,6 +94,10 @@ function AccessManagementPanel() {
   const [pwdError,   setPwdError]   = useState('')
   const [pwdSuccess, setPwdSuccess] = useState(false)
   const [changingPwd, setChangingPwd] = useState(false)
+
+  // Audit log reset
+  const [confirmAuditReset, setConfirmAuditReset] = useState(false)
+  const [auditResetDone, setAuditResetDone]       = useState(false)
 
   const handleAddEmail = () => {
     const trimmed = newEmail.trim().toLowerCase()
@@ -265,6 +271,57 @@ function AccessManagementPanel() {
             </Button>
           </div>
         )}
+      </div>
+
+      {/* ── Danger Zone: Reset All Audit Logs ───────────────────────── */}
+      <div className="border border-red-200 rounded-xl overflow-hidden mt-6">
+        <div className="px-4 py-2.5 bg-red-50 flex items-center justify-between">
+          <span className="text-sm font-semibold text-red-700">Danger Zone</span>
+        </div>
+        <div className="px-4 py-4 bg-white space-y-3">
+          <div>
+            <p className="text-sm font-medium text-gray-800">Reset All Audit Logs</p>
+            <p className="text-xs text-gray-500 mt-0.5">
+              Permanently deletes every entry from all audit logs (both skill-level and settings-level).
+              This cannot be undone.
+            </p>
+          </div>
+          {auditResetDone && (
+            <p className="text-xs text-green-600 font-semibold">All audit logs have been cleared.</p>
+          )}
+          {!confirmAuditReset ? (
+            <button
+              onClick={() => setConfirmAuditReset(true)}
+              className="px-4 py-2 text-sm font-semibold text-red-600 border border-red-300 rounded-lg hover:bg-red-50 transition-colors"
+            >
+              Reset All Audit Logs…
+            </button>
+          ) : (
+            <div className="flex items-center gap-3">
+              <p className="text-sm text-red-700 font-medium">Are you sure? This is irreversible.</p>
+              <button
+                onClick={() => {
+                  resetAuditLogs.mutate(undefined, {
+                    onSuccess: () => {
+                      setConfirmAuditReset(false)
+                      setAuditResetDone(true)
+                    },
+                  })
+                }}
+                disabled={resetAuditLogs.isPending}
+                className="px-4 py-1.5 text-sm font-semibold text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors"
+              >
+                {resetAuditLogs.isPending ? 'Clearing…' : 'Yes, Clear All Logs'}
+              </button>
+              <button
+                onClick={() => setConfirmAuditReset(false)}
+                className="text-sm text-gray-500 hover:underline"
+              >
+                Cancel
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )

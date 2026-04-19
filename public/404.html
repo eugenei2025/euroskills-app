@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>EuroSkills App</title>
+  <script>
+    // GitHub Pages SPA routing fix.
+    // Saves the full URL to sessionStorage, then redirects to the root index.html.
+    // index.html reads sessionStorage.redirect and restores the URL via history.replaceState.
+    sessionStorage.redirect = location.href;
+  </script>
+  <meta http-equiv="refresh" content="0;URL='/euroskills-app/'">
+</head>
+<body></body>
+</html>
